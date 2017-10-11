@@ -1,6 +1,7 @@
 var GF = function () {
     var frameCount = 0;
     var lastTime, fpsContainer, fps;
+    var canvas, ctx, w, h;
     
     var measureFps = function (newTime) {
         if (lastTime == undefined) {
@@ -24,15 +25,54 @@ var GF = function () {
     var mainLoop = function (time) {
         measureFps(time);
         
+        // clear canvas
+        clearCanvas();
+        
+        // draw a monster
+        drawMonster(10 + Math.random() * 10, 10 + Math.random() * 10);
+        
         //document.body.innerHTML = Math.random();
         requestAnimationFrame(mainLoop);
     }
     
     var start = function (time) {
+        canvas = document.querySelector("#myCanvas");
+
+        w = canvas.width;
+        h = canvas.height;
+
+        ctx = canvas.getContext("2d");
+        
         fpsContainer = document.createElement("div");
-        let canvas = document.getElementById("myCanvas");
         document.body.insertBefore(fpsContainer, canvas);
         requestAnimationFrame(mainLoop);
+    }
+    
+    function clearCanvas() {
+        ctx.clearRect(0, 0, w, h);
+    }
+    
+    function drawMonster(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.strokeRect(0, 0, 100, 100);
+
+        // eyes
+        ctx.fillRect(20, 20, 10, 10);
+        ctx.fillRect(65, 20, 10, 10);
+
+        // nose
+        ctx.strokeRect(45, 40, 10, 40);
+
+        // mouth
+        ctx.strokeRect(35, 84, 30, 10);
+
+        // teeth 
+        ctx.fillRect(38, 84, 10, 10);
+        ctx.fillRect(52, 84, 10, 10);
+
+        ctx.restore();
     }
     
     return {
@@ -40,41 +80,7 @@ var GF = function () {
     };
 }
 
-var game = new GF();
-game.start();
-
-var canvas, ctx, w, h;
-
 window.onload = function init () {
-    canvas = document.querySelector("#myCanvas");
-    
-    w = canvas.width;
-    h = canvas.height;
-    
-    ctx = canvas.getContext("2d");
-    
-    drawMonster(10, 10);
-}
-
-function drawMonster (x, y) {
-    ctx.save();
-    ctx.translate(x, y);
-    
-    ctx.strokeRect(0, 0, 100, 100);
-    
-    // eyes
-    ctx.fillRect(20, 20, 10, 10);
-    ctx.fillRect(65, 20, 10, 10);
-    
-    // nose
-    ctx.strokeRect(45, 40, 10, 40);
-    
-    // mouth
-    ctx.strokeRect(35, 84, 30, 10);
-    
-    // teeth 
-    ctx.fillRect(38, 84, 10, 10);
-    ctx.fillRect(52, 84, 10, 10);
-    
-    ctx.restore();
+    var game = new GF();
+    game.start();
 }
