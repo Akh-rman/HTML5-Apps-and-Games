@@ -6,6 +6,13 @@ var GF = function () {
     // vars for handling inputs
     var inputStates = {};
     
+    // the monster
+    var monster = {
+        x: 10,
+        y: 10,
+        speed: 1
+    };
+    
     var measureFps = function (newTime) {
         if (lastTime == undefined) {
             lastTime = newTime;
@@ -25,30 +32,63 @@ var GF = function () {
         frameCount++;
     }
     
-    var mainLoop = function (time) {
-        measureFps(time);
-        
-        // clear canvas
-        clearCanvas();
-        
-        // draw a monster
-        drawMonster(10 + Math.random() * 10, 10 + Math.random() * 10);
+    function getMousePos (evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+    
+    function clearCanvas() {
+        ctx.clearRect(0, 0, w, h);
+    }
+    
+    function drawMonster(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        ctx.strokeRect(0, 0, 100, 100);
+
+        // eyes
+        ctx.fillRect(20, 20, 10, 10);
+        ctx.fillRect(65, 20, 10, 10);
+
+        // nose
+        ctx.strokeRect(45, 40, 10, 40);
+
+        // mouth
+        ctx.strokeRect(35, 84, 30, 10);
+
+        // teeth 
+        ctx.fillRect(38, 84, 10, 10);
+        ctx.fillRect(52, 84, 10, 10);
+
+        ctx.restore();
+    }
+    
+    function updateMonsterPosition () {
+        monster.speedX = monster.speedY = 0;
         
         // check inputStates
         if (inputStates.left) {
             ctx.fillText("left", 150, 20);
+            monster.speedX = -monster.speed;
         }
         
         if (inputStates.up) {
             ctx.fillText("up", 150, 50);
+            monster.speedY = -monster.speed;
         }
         
         if (inputStates.right) {
             ctx.fillText("right", 150, 80);
+            monster.speedX = monster.speed;
         }
         
         if (inputStates.down) {
             ctx.fillText("down", 150, 120);
+            monster.speedY = monster.speed;
         }
         
         if (inputStates.space) {
@@ -61,17 +101,27 @@ var GF = function () {
         
         if (inputStates.mousedown) {
             ctx.fillText("mousedown  b" + inputStates.mouseButton, 5, 180);
+            monster.speed = 5;
+        } else {
+            monster.speed = 1;
         }
         
-        requestAnimationFrame(mainLoop);
+        monster.x += monster.speedX;
+        monster.y += monster.speedY;
     }
     
-    function getMousePos (evt) {
-        var rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
+    var mainLoop = function (time) {
+        measureFps(time);
+        
+        // clear canvas
+        clearCanvas();
+        
+        // draw a monster
+        drawMonster(monster.x, monster.y);
+        
+        updateMonsterPosition();
+        
+        requestAnimationFrame(mainLoop);
     }
     
     var start = function (time) {
@@ -131,33 +181,6 @@ var GF = function () {
         }, false);
         
         requestAnimationFrame(mainLoop);
-    }
-    
-    function clearCanvas() {
-        ctx.clearRect(0, 0, w, h);
-    }
-    
-    function drawMonster(x, y) {
-        ctx.save();
-        ctx.translate(x, y);
-
-        ctx.strokeRect(0, 0, 100, 100);
-
-        // eyes
-        ctx.fillRect(20, 20, 10, 10);
-        ctx.fillRect(65, 20, 10, 10);
-
-        // nose
-        ctx.strokeRect(45, 40, 10, 40);
-
-        // mouth
-        ctx.strokeRect(35, 84, 30, 10);
-
-        // teeth 
-        ctx.fillRect(38, 84, 10, 10);
-        ctx.fillRect(52, 84, 10, 10);
-
-        ctx.restore();
     }
     
     return {
