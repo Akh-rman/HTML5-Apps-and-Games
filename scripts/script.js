@@ -1,7 +1,10 @@
 var GF = function () {
+    // vars for counting frames/s
     var frameCount = 0;
     var lastTime, fpsContainer, fps;
+    
     var canvas, ctx, w, h;
+    var gamepad;
     
     // vars for handling inputs
     var inputStates = {};
@@ -110,11 +113,91 @@ var GF = function () {
         monster.y += monster.speedY;
     }
     
+    window.addEventListener("gamepadconnected", function (e) {
+        gamepad = e.gamepad;
+        var index = gamepad.index;
+        var id = gamepad.id;
+        var nbButtons = gamepad.buttons.length;
+        var nbAxes = gamepad.axes.length;
+        console.log("Gamepad № " + index + ", with id " + id + " is connected. It has " + nbButtons + " buttons and " + nbAxes + " axes");
+    });
+    
+    window.addEventListener("gamepaddisconnected", function (e) {
+        var gamepad = e.gamepad;
+        var index = gamepad.index;
+        console.log("Gamepad № " + index + " has been disconnected");
+    });
+    
+    // detect axes (joystick states)
+    function checkAxes (gamepad) {
+        if (gamepad === undefined) return;
+        if (!gamepad.connected) return;
+        
+        // set inputStates.left, right, up, down
+        inputStates.left = inputStates.right = inputStates.up = inputStates.down = false;
+        
+        // horizontal detection
+        if (gamepad.axes[0] > 0.5) {
+            inputStates.right = true;
+            inputStates.left = false;
+        } else if (gamepad.axes[0] < -0.5) {
+            inputStates.left = true;
+            inputStates.right = false;
+        }
+        
+        // vertical detection
+        if (gamepad.axes[1] > 0.5) {
+            inputStates.down = true;
+            inputStates.up = false;
+        } else if (gamepad.axes[1] < -0.5) {
+            inputStates.up = true;
+            inputStates.down = false;
+        }
+        
+        inputStates.angle = Math.atan2(-gamepad.axes[1], gamepad.axes[0]);
+    }
+    
+    // detect button states
+    function checkButtons (gamepad) {
+        if (gamepad === undefined) return;
+        if (!gamepad.connected) return;
+        
+        for (var i = 0; i < gamepad.buttons.length; i++) {
+            var b = gamepad.buttons[i];
+            
+            if (b.pressed) {
+                console.log("button pressed");
+                if (b.value !== undefined) {
+                    console.log("analog button pressed");
+                }
+            }
+        }
+    }
+    
+    function scangamepads () {
+        var gamepads = navigator.getGamepads();
+        
+        for (var i = 0; i < gamepads.length; i++) {
+            if (gamepads[i]) {
+                gamepad = gamepads[i];
+            }
+        }
+    }
+    
+    function updateGamePadStatus () {
+        scangamepads();
+        checkButtons(gamepad);
+        checkAxes(gamepad);
+    }
+    
     var mainLoop = function (time) {
         measureFps(time);
         
         // clear canvas
         clearCanvas();
+        
+        // gamepad
+        updateGamePadStatus();
         
         // draw a monster
         drawMonster(monster.x, monster.y);
