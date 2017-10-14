@@ -3,6 +3,9 @@ var GF = function () {
     var frameCount = 0;
     var lastTime, fpsContainer, fps;
     
+    // for time based animation
+    var delta, oldTime = 0;
+    
     var canvas, ctx, w, h;
     var gamepad;
     
@@ -13,7 +16,11 @@ var GF = function () {
     var monster = {
         x: 10,
         y: 10,
-        speed: 1
+        speed: 100 // pixels/s   
+    };
+    
+    var calcDistanceToMove = function (delta, speed) {
+        return (speed * delta) / 1000;
     };
     
     var measureFps = function (newTime) {
@@ -34,6 +41,10 @@ var GF = function () {
         fpsContainer.innerHTML = "FPS " + fps;
         frameCount++;
     }
+        
+    function clearCanvas() {
+        ctx.clearRect(0, 0, w, h);
+    }
     
     function getMousePos (evt) {
         var rect = canvas.getBoundingClientRect();
@@ -41,10 +52,6 @@ var GF = function () {
             x: evt.clientX - rect.left,
             y: evt.clientY - rect.top
         };
-    }
-    
-    function clearCanvas() {
-        ctx.clearRect(0, 0, w, h);
     }
     
     function drawMonster(x, y) {
@@ -70,7 +77,7 @@ var GF = function () {
         ctx.restore();
     }
     
-    function updateMonsterPosition () {
+    function updateMonsterPosition (delta) {
         monster.speedX = monster.speedY = 0;
         
         // check inputStates
@@ -104,13 +111,13 @@ var GF = function () {
         
         if (inputStates.mousedown) {
             ctx.fillText("mousedown  b" + inputStates.mouseButton, 5, 180);
-            monster.speed = 5;
+            monster.speed = 500;
         } else {
-            monster.speed = 1;
+            monster.speed = 100;
         }
         
-        monster.x += monster.speedX;
-        monster.y += monster.speedY;
+        monster.x += calcDistanceToMove(delta, monster.speedX);
+        monster.y += calcDistanceToMove(delta, monster.speedY);
     }
     
     window.addEventListener("gamepadconnected", function (e) {
@@ -190,8 +197,17 @@ var GF = function () {
         checkAxes(gamepad);
     }
     
+    function timer (currentTime) {
+        var delta = currentTime - oldTime;
+        oldTime = currentTime;
+        return delta;
+    }
+    
     var mainLoop = function (time) {
         measureFps(time);
+        
+        // number of ms since last frame draw
+        delta = timer(time);
         
         // clear canvas
         clearCanvas();
@@ -202,7 +218,7 @@ var GF = function () {
         // draw a monster
         drawMonster(monster.x, monster.y);
         
-        updateMonsterPosition();
+        updateMonsterPosition(delta);
         
         requestAnimationFrame(mainLoop);
     }
