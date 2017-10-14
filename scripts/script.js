@@ -19,6 +19,9 @@ var GF = function () {
         speed: 100 // pixels/s   
     };
     
+    // array of balls to animate
+    var ballArray = [];
+    
     var calcDistanceToMove = function (delta, speed) {
         return (speed * delta) / 1000;
     };
@@ -203,6 +206,83 @@ var GF = function () {
         return delta;
     }
     
+    // class for balls
+    class Ball {
+        constructor(x, y, angle, v, diametr) {
+            this.x = x;
+            this.y = y;
+            this.angle = angle;
+            this.v = v;
+            this.radius = diametr / 2;
+        }
+        
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        move() {
+            // add horizontal increment to the x pos
+            var incX = this.v * Math.cos(this.angle);
+            // add vertical increment to the y pos
+            var incY = this.v * Math.sin(this.angle);
+            
+            this.x += calcDistanceToMove(delta, incX);
+            this.y += calcDistanceToMove(delta, incY);
+        }
+    }
+    
+    function createBalls (numberOfBalls) {
+        for (var i = 0; i < numberOfBalls; i++) {
+            // create a ball with random position and speed
+            var ball = new Ball(w * Math.random(), h * Math.random(), (2 * Math.PI) * Math.random(), (400 * Math.random()), 30);
+            ballArray[i] = ball;
+        }
+    }
+    
+    function testCollisionWithWalls (ball) {
+        // left
+        if (ball.x < ball.radius) {
+            ball.x = ball.radius;
+            ball.angle = -ball.angle + Math.PI;
+        }
+        
+        // right
+        if (ball.x > w - ball.radius) {
+            ball.x = w - ball.radius;
+            ball.angle = -ball.angle + Math.PI;
+        }
+        
+        // up
+        if (ball.y < ball.radius) {
+            ball.y = ball.radius;
+            ball.angle = -ball.angle;
+        }
+        
+        // down
+        if (ball.y > h - ball.radius) {
+            ball.y = h - ball.radius;
+            ball.angle = -ball.angle;
+        }
+    }
+    
+    function updateBalls (delta) {
+        // for each ball in the array
+        for (var i = 0; i < ballArray.length; i++) {
+            var ball = ballArray[i];
+            
+            // 1) move the ball
+            ball.move();
+            
+            // 2) test if the ball collides with a wall 
+            testCollisionWithWalls(ball);
+            
+            // 3) draw ball
+            ball.draw();
+        }
+    }
+    
     var mainLoop = function (time) {
         measureFps(time);
         
@@ -218,7 +298,11 @@ var GF = function () {
         // draw a monster
         drawMonster(monster.x, monster.y);
         
+        // check inputs and move the monster
         updateMonsterPosition(delta);
+        
+        // update and draw balls
+        updateBalls(delta);
         
         requestAnimationFrame(mainLoop);
     }
@@ -278,6 +362,9 @@ var GF = function () {
         canvas.addEventListener("mouseup", (evt) => {
             inputStates.mousedown = false;
         }, false);
+        
+        // create the balls: try to change the parameter
+        createBalls(10);
         
         requestAnimationFrame(mainLoop);
     }
