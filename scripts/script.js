@@ -16,6 +16,8 @@ var GF = function () {
     var monster = {
         x: 10,
         y: 10,
+        width: 100,
+        height: 100,
         speed: 100 // pixels/s   
     };
     
@@ -217,9 +219,13 @@ var GF = function () {
         }
         
         draw() {
+            ctx.save()
             ctx.beginPath();
+            ctx.fillStyle = this.color;
             ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
             ctx.fill();
+            ctx.restore();
+            this.color = "black";
         }
         
         move() {
@@ -278,9 +284,27 @@ var GF = function () {
             // 2) test if the ball collides with a wall 
             testCollisionWithWalls(ball);
             
+            // test monster collides with wall
+            if (circRectsOverlap(monster.x, monster.y, monster.width, monster.height, ball.x, ball.y, ball.radius)) {
+                ball.color = "red";
+            }
+            
             // 3) draw ball
             ball.draw();
         }
+    }
+    
+    // collisions between rectangle and circle
+    function circRectsOverlap (x0, y0, w0, h0, cx, cy, r) {
+        var testX = cx;
+        var testY = cy;
+        
+        if (testX < x0) testX = x0;
+        if (testX > (x0 + w0)) testX = (x0 + w0);
+        if (testY < y0) testY = y0;
+        if (testY > (y0 + h0)) testY = (y0 + h0);
+        
+        return (((cx - testX) * (cx - testX) + (cy - testY) * (cy - testY)) < r * r);
     }
     
     var mainLoop = function (time) {
