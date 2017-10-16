@@ -21,14 +21,27 @@ var GF = function () {
         speed: 100 // pixels/s   
     };
     
-    // array of balls to animate
-    var ballArray = [];
+    // woman object and sprites
+    var WOMAN_DIR_RIGHT = 6;
+    var WOMAN_DIR_LEFT = 2;
+    var woman = {
+        x: 100,
+        y: 200,
+        width: 48,
+        speed: 100, // pixels/s this time
+        direction: WOMAN_DIR_RIGHT
+    };
     
-    var calcDistanceToMove = function (delta, speed) {
+    var womanSprites = [];
+    
+    // array of balls to animate
+    //var ballArray = [];
+    
+    var calcDistanceToMove = (delta, speed) => {
         return (speed * delta) / 1000;
     };
     
-    var measureFps = function (newTime) {
+    var measureFps = (newTime) => {
         if (lastTime == undefined) {
             lastTime = newTime;
             return;
@@ -87,22 +100,22 @@ var GF = function () {
         
         // check inputStates
         if (inputStates.left) {
-            ctx.fillText("left", 150, 20);
+            //ctx.fillText("left", 150, 20);
             monster.speedX = -monster.speed;
         }
         
         if (inputStates.up) {
-            ctx.fillText("up", 150, 50);
+            //ctx.fillText("up", 150, 50);
             monster.speedY = -monster.speed;
         }
         
         if (inputStates.right) {
-            ctx.fillText("right", 150, 80);
+            //ctx.fillText("right", 150, 80);
             monster.speedX = monster.speed;
         }
         
         if (inputStates.down) {
-            ctx.fillText("down", 150, 120);
+            //ctx.fillText("down", 150, 120);
             monster.speedY = monster.speed;
         }
         
@@ -111,11 +124,11 @@ var GF = function () {
         }
         
         if (inputStates.mousePos) {
-            ctx.fillText("x = " + inputStates.mousePos.x + " y = " + inputStates.mousePos.y, 5, 150);
+            //ctx.fillText("x = " + inputStates.mousePos.x + " y = " + inputStates.mousePos.y, 5, 150);
         }
         
         if (inputStates.mousedown) {
-            ctx.fillText("mousedown  b" + inputStates.mouseButton, 5, 180);
+            //ctx.fillText("mousedown  b" + inputStates.mouseButton, 5, 180);
             monster.speed = 500;
         } else {
             monster.speed = 100;
@@ -307,6 +320,127 @@ var GF = function () {
         return (((cx - testX) * (cx - testX) + (cy - testY) * (cy - testY)) < r * r);
     }
     
+    class SpriteImage {
+        constructor (img, x, y, width, height) {
+            this.img = img;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+        
+        draw(ctx, xPos, yPos, scale) {
+            ctx.drawImage(this.img, this.x, this.y, this.width, this.height, xPos, yPos, this.width * scale, this.height * scale);
+        }
+    }
+    
+    class Sprite {
+        constructor () {
+            this.spriteArray = [];
+            this.currentFrame = 0;
+            this.delayBetweenFrames = 10;
+            this.then = performance.now();
+            this.totalTimeSinceLastRedraw = 0;
+        }
+        
+        extractSprites(spritesheet, nbPostures, postureToExtract, nbFramesPerPosture, spriteWidth, spriteHeight) {
+            // number of sprites per row in the spritesheet
+            var nbSpritesPerRow = Math.floor(spritesheet.width / spriteWidth);
+            
+            // extract each sprite
+            var startIndex = (postureToExtract - 1) * nbFramesPerPosture;
+            var endIndex = startIndex + nbFramesPerPosture;
+            
+            for (var index = startIndex; index < endIndex; index++) {
+                var x = (index % nbSpritesPerRow) * spriteWidth;
+                var y = Math.floor(index / nbSpritesPerRow) * spriteHeight;
+                
+                // build a spriteImage object
+                var s = new SpriteImage(spritesheet, x, y, spriteWidth, spriteHeight);
+                
+                this.spriteArray.push(s);
+            }
+        }
+        
+        draw(ctx, x, y) {
+            // use time based animation to draw only a few images per second
+            var now = performance.now();
+            var delta = now - this.then;
+            
+            // draw currentSpriteImage
+            var currentSpriteImage = this.spriteArray[this.currentFrame];
+            currentSpriteImage.draw(ctx, x, y, 1); 
+            
+            // if the delay between images is elapsed, go to the next one
+            if (this.totalTimeSinceLastRedraw > this.delayBetweenFrames) {
+                // go to the next sprite image
+                this.currentFrame++;
+                this.currentFrame %= this.spriteArray.length;
+                
+                // reset the total time since last image has been drawn
+                this.totalTimeSinceLastRedraw = 0;
+            } else {
+                // sum the total time since last redraw
+                this. totalTimeSinceLastRedraw += delta;
+            }
+            
+            this.then = now;
+        }
+        
+        drawStoped(ctx, x, y) {
+            var currentSpriteImage = this.spriteArray[this.currentFrame];
+            currentSpriteImage.draw(ctx, x, y, 1);
+        }
+        
+        setNbImagesPerSecond(nb) {
+            // delay in ms between images
+            this.delayBetweenFrames = 1000 / nb;
+        }
+    }
+    
+    function updateWomanPosition (delta) {
+        // check collision on left or right
+        if (((woman.x + woman.width) > canvas.width) || (woman.x < 0)) {
+            woman.speed = -woman.speed;
+        } 
+        // change sprite direction
+        if (woman.speed >= 0) {
+            woman.direction = WOMAN_DIR_RIGHT;
+        } else {
+            woman.direction = WOMAN_DIR_LEFT;
+        }
+        
+        woman.x += calcDistanceToMove(delta, woman.speed);
+    }
+    
+    var loadAssets = (callback) => {
+        var SPRITESHEET_URL = "http://i.imgur.com/3VesWqx.png";
+        var SPRITE_WIDTH = 48;
+        var SPRITE_HEIGHT = 92;
+        var NB_POSTURES = 8;
+        var NB_FRAMES_PER_POSTURE = 13;
+        
+        // load the spritesheet
+        var spritesheet = new Image();
+        spritesheet.src = SPRITESHEET_URL;
+        
+        // called when the spritesheet has been loaded
+        spritesheet.onload = () => {
+            // create woman sprites
+            for (var i = 0; i < NB_POSTURES; i++) {
+                var sprite = new Sprite();
+                
+                sprite.extractSprites(spritesheet, NB_POSTURES, (i + 1),
+                    NB_FRAMES_PER_POSTURE,
+                    SPRITE_WIDTH, SPRITE_HEIGHT);
+                sprite.setNbImagesPerSecond(20);
+                womanSprites[i] = sprite;
+            }
+            
+            callback();
+        };
+    };
+    
     var mainLoop = function (time) {
         measureFps(time);
         
@@ -325,9 +459,14 @@ var GF = function () {
         // check inputs and move the monster
         updateMonsterPosition(delta);
         
-        // update and draw balls
-        updateBalls(delta);
+        // draw a woman
+        womanSprites[woman.direction].draw(ctx, woman.x, woman.y);
+        updateWomanPosition(delta);
         
+        // update and draw balls
+        //updateBalls(delta);
+        
+        // call the animation loop every 1/60 of second
         requestAnimationFrame(mainLoop);
     }
     
@@ -388,9 +527,13 @@ var GF = function () {
         }, false);
         
         // create the balls: try to change the parameter
-        createBalls(10);
+        //createBalls(10);
         
-        requestAnimationFrame(mainLoop);
+        loadAssets(() => {
+            requestAnimationFrame(mainLoop)
+        })
+        
+        //requestAnimationFrame(mainLoop);
     }
     
     return {
@@ -401,4 +544,4 @@ var GF = function () {
 window.onload = function init () {
     var game = new GF();
     game.start();
-}
+};
