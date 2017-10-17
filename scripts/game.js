@@ -1,11 +1,4 @@
 var GF = function () {
-    // vars for counting frames/s
-    var frameCount = 0;
-    var lastTime, fpsContainer, fps;
-    
-    // for time based animation
-    var delta, oldTime = 0;
-    
     var canvas, ctx, w, h;
     var gamepad;
     
@@ -53,40 +46,9 @@ var GF = function () {
     var ballArray = [];
     var nbBalls = 5;
     var currentScore = 0;
-    
-    var calcDistanceToMove = (delta, speed) => {
-        return (speed * delta) / 1000;
-    };
-    
-    var measureFps = (newTime) => {
-        if (lastTime == undefined) {
-            lastTime = newTime;
-            return;
-        }
-        
-        // calculate the delta between last & current frame
-        var diffTime = newTime - lastTime;
-        
-        if (diffTime >= 1000) {
-            fps = frameCount;
-            frameCount = 0;
-            lastTime = newTime;
-        }
-        
-        fpsContainer.innerHTML = "FPS " + fps;
-        frameCount++;
-    }
         
     function clearCanvas() {
         ctx.clearRect(0, 0, w, h);
-    }
-    
-    function getMousePos (evt) {
-        var rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
     }
     
     function drawMonster(x, y) {
@@ -233,44 +195,6 @@ var GF = function () {
         checkAxes(gamepad);
     }
     
-    function timer (currentTime) {
-        var delta = currentTime - oldTime;
-        oldTime = currentTime;
-        return delta;
-    }
-    
-    // class for balls
-    class Ball {
-        constructor(x, y, angle, v, diametr) {
-            this.x = x;
-            this.y = y;
-            this.angle = angle;
-            this.v = v;
-            this.radius = diametr / 2;
-            this.dead = false;
-        }
-        
-        draw() {
-            ctx.save()
-            ctx.beginPath();
-            ctx.fillStyle = this.color;
-            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.restore();
-            this.color = "black";
-        }
-        
-        move() {
-            // add horizontal increment to the x pos
-            var incX = this.v * Math.cos(this.angle);
-            // add vertical increment to the y pos
-            var incY = this.v * Math.sin(this.angle);
-            
-            this.x += calcDistanceToMove(delta, incX);
-            this.y += calcDistanceToMove(delta, incY);
-        }
-    }
-    
     function createBalls (numberOfBalls) {
         ballArray = [];
         
@@ -286,32 +210,6 @@ var GF = function () {
         }
     }
     
-    function testCollisionWithWalls (ball) {
-        // left
-        if (ball.x < ball.radius) {
-            ball.x = ball.radius;
-            ball.angle = -ball.angle + Math.PI;
-        }
-        
-        // right
-        if (ball.x > w - ball.radius) {
-            ball.x = w - ball.radius;
-            ball.angle = -ball.angle + Math.PI;
-        }
-        
-        // up
-        if (ball.y < ball.radius) {
-            ball.y = ball.radius;
-            ball.angle = -ball.angle;
-        }
-        
-        // down
-        if (ball.y > h - ball.radius) {
-            ball.y = h - ball.radius;
-            ball.angle = -ball.angle;
-        }
-    }
-    
     function updateBalls (delta) {
         for (var i = 0; i < ballArray.length; i++) {
             var ball = ballArray[i];
@@ -320,7 +218,7 @@ var GF = function () {
             ball.move();
             
             // 2) test if the ball collides with a wall 
-            testCollisionWithWalls(ball);
+            testCollisionWithWalls(ball, w, h);
             
             // test monster collides with wall
             if (circRectsOverlap(monster.x, monster.y, monster.width, monster.height, ball.x, ball.y, ball.radius)) {
@@ -330,23 +228,10 @@ var GF = function () {
             }
             
             // 3) draw ball
-            ball.draw();
+            ball.draw(ctx);
         }
     }
-    
-    // collisions between rectangle and circle
-    function circRectsOverlap (x0, y0, w0, h0, cx, cy, r) {
-        var testX = cx;
-        var testY = cy;
-        
-        if (testX < x0) testX = x0;
-        if (testX > (x0 + w0)) testX = (x0 + w0);
-        if (testY < y0) testY = y0;
-        if (testY > (y0 + h0)) testY = (y0 + h0);
-        
-        return (((cx - testX) * (cx - testX) + (cy - testY) * (cy - testY)) < r * r);
-    }
-    
+
     class SpriteImage {
         constructor (img, x, y, width, height) {
             this.img = img;
@@ -567,6 +452,8 @@ var GF = function () {
     
     var start = function (time) {
         canvas = document.querySelector("#myCanvas");
+        
+        initFPSCounter(canvas);
 
         w = canvas.width;
         h = canvas.height;
@@ -574,52 +461,7 @@ var GF = function () {
         ctx = canvas.getContext("2d");
         ctx.font = "20px Arial";
         
-        fpsContainer = document.createElement("div");
-        document.body.insertBefore(fpsContainer, canvas);
-        
-        // add the listener to the main, window object, and update the states
-        window.addEventListener("keydown", (event) => {
-            if (event.keyCode === 37) {
-                inputStates.left = true;
-            } else if (event.keyCode === 38) {
-                inputStates.up = true;
-            } else if (event.keyCode === 39) {
-                inputStates.right = true;
-            } else if (event.keyCode === 40) {
-                inputStates.down = true;
-            } else if (event.keyCode === 32) {
-                inputStates.space = true;
-            }
-        }, false);
-        
-        // if the key is released, change the states object
-        window.addEventListener("keyup", (event) => {
-            if (event.keyCode === 37) {
-                inputStates.left = false;
-            } else if (event.keyCode === 38) {
-                inputStates.up = false;
-            } else if (event.keyCode === 39) {
-                inputStates.right = false;
-            } else if (event.keyCode === 40) {
-                inputStates.down = false;
-            } else if (event.keyCode === 32) {
-                inputStates.space = false;
-            }
-        }, false);
-        
-        // mouse event listeners
-        canvas.addEventListener("mousemove", (evt) => {
-            inputStates.mousePos = getMousePos(evt);
-        }, false);
-        
-        canvas.addEventListener("mousedown", (evt) => {
-            inputStates.mousedown = true;
-            inputStates.mouseButton = evt.button;
-        }, false);
-        
-        canvas.addEventListener("mouseup", (evt) => {
-            inputStates.mousedown = false;
-        }, false);
+        addListeners(inputStates, canvas);
         
         // create the balls: try to change the parameter
         createBalls(nbBalls);
