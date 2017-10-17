@@ -12,15 +12,30 @@ var GF = function () {
     // vars for handling inputs
     var inputStates = {};
     
+    // game states
+    var gameStates = {
+        mainMenu: 0,
+        gameRunning: 1,
+        gameOver: 2
+    };
+    var currentGameState = gameStates.gameRunning;
+    var currentLevel = 1;
+    var TIME_BETWEEN_LEVELS = 5000; // 5 seconds
+    var currentLevetTime = TIME_BETWEEN_LEVELS;
+    // sound of a ball exploding
+    var plopSound;
+    
     // the monster
     var monster = {
         x: 10,
         y: 10,
-        width: 100,
-        height: 100,
-        speed: 100 // pixels/s   
+        width: 40,
+        height: 40,
+        speed: 100, // pixels/s
+        dead: false
     };
     
+    /*
     // woman object and sprites
     var WOMAN_DIR_RIGHT = 6;
     var WOMAN_DIR_LEFT = 2;
@@ -33,9 +48,11 @@ var GF = function () {
     };
     
     var womanSprites = [];
-    
+    */
     // array of balls to animate
-    //var ballArray = [];
+    var ballArray = [];
+    var nbBalls = 5;
+    var currentScore = 0;
     
     var calcDistanceToMove = (delta, speed) => {
         return (speed * delta) / 1000;
@@ -75,6 +92,7 @@ var GF = function () {
     function drawMonster(x, y) {
         ctx.save();
         ctx.translate(x, y);
+        ctx.scale(0.5, 0.5);
 
         ctx.strokeRect(0, 0, 100, 100);
 
@@ -229,6 +247,7 @@ var GF = function () {
             this.angle = angle;
             this.v = v;
             this.radius = diametr / 2;
+            this.dead = false;
         }
         
         draw() {
@@ -253,10 +272,17 @@ var GF = function () {
     }
     
     function createBalls (numberOfBalls) {
+        ballArray = [];
+        
         for (var i = 0; i < numberOfBalls; i++) {
             // create a ball with random position and speed
-            var ball = new Ball(w * Math.random(), h * Math.random(), (2 * Math.PI) * Math.random(), (400 * Math.random()), 30);
-            ballArray[i] = ball;
+            var ball = new Ball(w * Math.random(), h * Math.random(), (2 * Math.PI) * Math.random(), (80 * Math.random()), 30);
+            
+            if (!circRectsOverlap(monster.x, monster.y, monster.width, monster.height, ball.x, ball.y, ball.radius * 3)) {
+                ballArray[i] = ball;
+            } else {
+                i--;
+            }
         }
     }
     
@@ -287,7 +313,6 @@ var GF = function () {
     }
     
     function updateBalls (delta) {
-        // for each ball in the array
         for (var i = 0; i < ballArray.length; i++) {
             var ball = ballArray[i];
             
@@ -300,6 +325,8 @@ var GF = function () {
             // test monster collides with wall
             if (circRectsOverlap(monster.x, monster.y, monster.width, monster.height, ball.x, ball.y, ball.radius)) {
                 ball.color = "red";
+                monster.dead = true;
+                plopSound.play();
             }
             
             // 3) draw ball
@@ -414,6 +441,7 @@ var GF = function () {
     }
     
     var loadAssets = (callback) => {
+        /*
         var SPRITESHEET_URL = "http://i.imgur.com/3VesWqx.png";
         var SPRITE_WIDTH = 48;
         var SPRITE_HEIGHT = 92;
@@ -439,8 +467,43 @@ var GF = function () {
             
             callback();
         };
+        */
+        plopSound = new Howl({
+            urls: ['https://mainline.i3s.unice.fr/mooc/plop.mp3'],
+            autoplay: false,
+            volume: 1,
+            onload: () => {
+                console.log("All sounds loaded");
+                callback();
+            }
+        });
     };
     
+    function startNewGame () {
+        monster.dead = false;
+        currentLevetTime = 5000;
+        currentLevel = 1;
+        nbBalls = 5;
+        createBalls(nbBalls);
+        currentGameState = gameStates.gameRunning;
+    }
+    
+    function goToNextLevel () {
+        currentLevetTime = 5000;
+        currentLevel++;
+        nbBalls += 2;
+        createBalls(nbBalls);
+    }
+    
+    function displayScore () {
+        ctx.save();
+        ctx.fillStyle = "Green";
+        ctx.fillText("Level " + currentLevel, 300, 30);
+        ctx.fillText("Time " + (currentLevetTime / 1000).toFixed(1), 300, 60);
+        ctx.fillText("Balls " + nbBalls, 300, 90);
+        ctx.restore();
+    }
+
     var mainLoop = function (time) {
         measureFps(time);
         
@@ -453,18 +516,50 @@ var GF = function () {
         // gamepad
         updateGamePadStatus();
         
-        // draw a monster
-        drawMonster(monster.x, monster.y);
+        if (monster.dead) {
+            currentGameState = gameStates.gameOver;
+        }
         
-        // check inputs and move the monster
-        updateMonsterPosition(delta);
+        switch (currentGameState) {
+            case gameStates.gameRunning:
+                // draw a monster
+                drawMonster(monster.x, monster.y);
         
+                // check inputs and move the monster
+                updateMonsterPosition(delta);
+                
+                // update and draw balls
+                updateBalls(delta);
+                
+                // display score
+                displayScore();
+                
+                // when < 0 go to next level
+                currentLevetTime -= delta;
+                
+                if (currentLevetTime < 0) {
+                    goToNextLevel();
+                }
+                break;
+            case gameStates.mainMenu:
+                break;
+            case gameStates.gameOver:
+                ctx.fillText("Game OVER", 50, 100);
+                ctx.fillText("Press SPACE to start again", 50, 150);
+                ctx.fillText("Move with arrow keys", 50, 200);
+                ctx.fillText("Survive 5 seconds for next level", 50, 250);
+                
+                if (inputStates.space) {
+                    startNewGame();
+                }
+                break;
+        }
+        
+        /*
         // draw a woman
         womanSprites[woman.direction].draw(ctx, woman.x, woman.y);
         updateWomanPosition(delta);
-        
-        // update and draw balls
-        //updateBalls(delta);
+        */
         
         // call the animation loop every 1/60 of second
         requestAnimationFrame(mainLoop);
@@ -527,14 +622,12 @@ var GF = function () {
         }, false);
         
         // create the balls: try to change the parameter
-        //createBalls(10);
+        createBalls(nbBalls);
         
         loadAssets(() => {
             requestAnimationFrame(mainLoop)
         })
-        
-        //requestAnimationFrame(mainLoop);
-    }
+    };
     
     return {
         start: start
