@@ -23,4 +23,4 @@ npm run prod
 yarn prod
 ```
 
-Перейти в игру: <https://akh-rman.github.io/HTML5-Apps-and-Games/index.html>
+Перейти в игру: [https://akh-rman.github.io/HTML5-Apps-and-Games](https://akh-rman.github.io/HTML5-Apps-and-Games/build/index.html)
