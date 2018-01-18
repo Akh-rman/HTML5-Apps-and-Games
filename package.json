@@ -1,0 +1,25 @@
+{
+    "name": "HTML5-Apps-and-Games",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "dev": "gulp watch",
+        "prod": "gulp"
+    },
+    "repository": "https://github.com/Akh-rman/HTML5-Apps-and-Games.git",
+    "author": "Akh-rman <akh-rman@rambler.ru>",
+    "license": "MIT",
+    "devDependencies": {
+        "browser-sync": "^2.23.5",
+        "del": "^3.0.0",
+        "gulp": "^3.9.1",
+        "gulp-babel": "^7.0.0",
+        "gulp-clean-css": "^3.9.2",
+        "gulp-eslint": "^4.0.1",
+        "gulp-rev": "^8.1.1",
+        "gulp-uglify": "^3.0.0",
+        "gulp-usemin": "^0.3.28",
+        "gulp-watch": "^5.0.0",
+        "uglify-es": "^3.3.7"
+    }
+}
