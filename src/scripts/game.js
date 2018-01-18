@@ -22,8 +22,8 @@ var GF = function () {
     var monster = {
         x: 10,
         y: 10,
-        width: 40,
-        height: 40,
+        width: 50,
+        height: 50,
         speed: 100, // pixels/s
         dead: false
     };
@@ -56,7 +56,7 @@ var GF = function () {
         ctx.translate(x, y);
         ctx.scale(0.5, 0.5);
 
-        ctx.strokeRect(0, 0, 100, 100);
+        ctx.strokeRect(0, 0, monster.width * 2, monster.height * 2);
 
         // eyes
         ctx.fillRect(20, 20, 10, 10);
@@ -79,22 +79,22 @@ var GF = function () {
         monster.speedX = monster.speedY = 0;
         
         // check inputStates
-        if (inputStates.left) {
+        if (inputStates.left && monster.x > 0) {
             //ctx.fillText("left", 150, 20);
             monster.speedX = -monster.speed;
         }
         
-        if (inputStates.up) {
+        if (inputStates.up && monster.y > 0) {
             //ctx.fillText("up", 150, 50);
             monster.speedY = -monster.speed;
         }
         
-        if (inputStates.right) {
+        if (inputStates.right && ((monster.x + monster.width) < canvas.width)) {
             //ctx.fillText("right", 150, 80);
             monster.speedX = monster.speed;
         }
         
-        if (inputStates.down) {
+        if (inputStates.down && ((monster.y + monster.height) < canvas.height)) {
             //ctx.fillText("down", 150, 120);
             monster.speedY = monster.speed;
         }
@@ -137,7 +137,7 @@ var GF = function () {
     function checkAxes (gamepad) {
         if (gamepad === undefined) return;
         if (!gamepad.connected) return;
-        
+
         // set inputStates.left, right, up, down
         inputStates.left = inputStates.right = inputStates.up = inputStates.down = false;
         

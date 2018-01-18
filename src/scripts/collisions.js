@@ -36,3 +36,5 @@ function testCollisionWithWalls(ball, w, h) {
         ball.angle = -ball.angle;
     }
 }
+
+fgfg

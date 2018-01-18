@@ -4,7 +4,6 @@ var lastTime, fpsContainer, fps;
 var initFPSCounter = (canvas) => {
     fpsContainer = document.createElement("div");
     document.body.insertBefore(fpsContainer, canvas);
-    //document.body.appendChild(fpsContainer);
 };
 var measureFps = (newTime) => {
     if (lastTime == undefined) {
